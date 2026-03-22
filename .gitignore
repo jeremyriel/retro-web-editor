@@ -2,7 +2,23 @@ node_modules/
 dist/
 out/
 release/
+executable/
 .~wired-*
 *.tmp
 .DS_Store
 Thumbs.db
+Desktop.ini
+
+# Internal dev notes
+SAVESTATE.md
+architecture.md
+
+# Dev-mode launch scripts
+launch.bat
+launch.sh
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo

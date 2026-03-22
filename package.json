@@ -1,15 +1,38 @@
 {
   "name": "wired",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Web Interface Retro Editor for Desktop (WIRED) — A lightweight WYSIWYG HTML editor",
   "main": "out/main/index.js",
+  "author": {
+    "name": "Jeremy Riel",
+    "url": "https://www.jeremyriel.com"
+  },
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/jeremyriel/WIRED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jeremyriel/WIRED.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jeremyriel/WIRED/issues"
+  },
+  "keywords": [
+    "html-editor",
+    "wysiwyg",
+    "electron",
+    "codemirror",
+    "web-editor",
+    "live-preview",
+    "desktop-app"
+  ],
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "package:win": "electron-builder --win",
-    "package:mac": "electron-builder --mac",
-    "package:all": "electron-builder --win --mac"
+    "package:win": "npm run build && electron-builder --win",
+    "package:mac": "npm run build && electron-builder --mac",
+    "package:linux": "npm run build && electron-builder --linux",
+    "package:all": "npm run build && electron-builder --win --mac --linux"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",

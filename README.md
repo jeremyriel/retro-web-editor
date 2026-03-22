@@ -1,8 +1,14 @@
-# WIRED — Web Interface Retro Editor for Desktop
-
-**A free, open-source, lightweight WYSIWYG HTML editor for desktop.** Edit HTML, CSS, and JavaScript files visually or in code with real-time live preview — no browser or server required.
-
-WIRED is a modern alternative to Adobe Dreamweaver, BlueGriffon, and other visual web editors that have been discontinued. Built with Electron and CodeMirror 6, it runs on **Windows, macOS, and Linux** with minimal memory usage.
+<div align="center">
+  <img src="logo.png" alt="WIRED Logo" width="128" height="128" style="image-rendering: pixelated;">
+  <h1>WIRED — Web Interface Retro Editor for Desktop</h1>
+  <p><strong>A free, open-source, lightweight WYSIWYG HTML editor for desktop.</strong></p>
+  <p>Edit HTML, CSS, and JavaScript files visually or in code with real-time live preview — no browser or server required.</p>
+  <p>
+    <a href="https://github.com/jeremyriel/WIRED/releases/latest"><img src="https://img.shields.io/github/v/release/jeremyriel/WIRED?style=flat-square" alt="Latest Release"></a>
+    <a href="copying/LICENSE_GNU_GPL_3.0.txt"><img src="https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square" alt="License: GPL-3.0"></a>
+    <a href="https://github.com/jeremyriel/WIRED/releases"><img src="https://img.shields.io/github/downloads/jeremyriel/WIRED/total?style=flat-square" alt="Downloads"></a>
+  </p>
+</div>
 
 ---
 
@@ -12,11 +18,18 @@ Sometimes you just want to quickly edit web files on desktop visually!
 
 That's where Web Interface Retro Editor for Desktop (WIRED) comes in.
 
-I made this app initially for myself because the longstanding desktop web publishing apps have been discontinued (Dreamweaver CS6, BlueGriffon), are cloud-only, or are embedded within heavyweight software development tools that consume a lot of system resources. 
+I made this app initially for myself because the longstanding desktop web publishing apps have been discontinued (Dreamweaver CS6, BlueGriffon), are cloud-only, or are embedded within heavyweight software development tools that consume a lot of system resources.
 
 WIRED fills a gap as a **focused, fast, desktop-native WYSIWYG editor** that opens your local HTML files and lets you edit them visually — with the code always visible and in sync.
 
 **Built for web designers, educators, students, and front-end developers** who want a simple, capable tool for quick editing of HTML and CSS without the overhead of a full IDE.
+
+---
+
+## Screenshots
+
+<!-- Add screenshots here when available -->
+*Screenshots coming soon.*
 
 ---
 
@@ -55,6 +68,13 @@ WIRED fills a gap as a **focused, fast, desktop-native WYSIWYG editor** that ope
 - **Autosave** — automatic backup every 2 minutes to a temp file, plus an immediate save when files are opened
 - **Autosave recovery** — if WIRED detects an unsaved autosave that differs from the saved file, it prompts you to restore or discard the recovery
 - **Save-on-exit** — native Save / Don't Save / Cancel dialog for unsaved files
+
+### WCAG Accessibility Validator
+
+- Built-in **WCAG 2.1 Level AA** validator powered by [axe-core](https://github.com/dequelabs/axe-core)
+- Results grouped by impact (critical, serious, moderate, minor) with rule descriptions and WCAG tags
+- Download validation report as a `.txt` file
+- Re-run button for iterative fixing
 
 ### Theming & Accessibility
 
@@ -101,6 +121,43 @@ All `Ctrl` shortcuts use `Cmd` on macOS.
 
 ## Installation
 
+### Download Pre-Built Installers
+
+Download the latest version for your platform from the [Releases page](https://github.com/jeremyriel/WIRED/releases/latest):
+
+| Platform | Download | Notes |
+|---|---|---|
+| **Windows** (installer) | `WIRED-Setup-x.x.x.exe` | Guided installer with desktop shortcut |
+| **Windows** (portable) | `WIRED-x.x.x-portable.exe` | No installation needed — runs from any folder |
+| **macOS** | `WIRED-x.x.x-mac.dmg` | Open the DMG and drag WIRED to your Applications folder |
+| **Linux** | `WIRED-x.x.x.AppImage` | Make executable with `chmod +x` and run |
+
+### Windows Installation
+
+1. Download the `.exe` installer from the link above
+2. Run the installer — you'll see the license agreement (GNU GPL v3.0)
+3. Choose an install location (the default is fine for most users)
+4. A desktop shortcut and Start Menu entry will be created automatically
+5. Launch WIRED from the desktop or Start Menu
+
+### macOS Installation
+
+1. Download the `.dmg` file from the link above
+2. Open the DMG file
+3. Drag the WIRED icon into your Applications folder
+4. Launch WIRED from Applications (you may need to right-click > Open the first time, since the app is not signed with an Apple Developer certificate)
+
+### Linux Installation
+
+1. Download the `.AppImage` file from the link above
+2. Make it executable: `chmod +x WIRED-*.AppImage`
+3. Run it: `./WIRED-*.AppImage`
+
+---
+
+<details>
+<summary><strong>Build from Source</strong> (for developers)</summary>
+
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) 18 or later
@@ -109,7 +166,7 @@ All `Ctrl` shortcuts use `Cmd` on macOS.
 ### Clone and Install
 
 ```bash
-git clone https://github.com/your-username/WIRED.git
+git clone https://github.com/jeremyriel/WIRED.git
 cd WIRED
 npm install
 ```
@@ -122,11 +179,6 @@ npm run dev
 
 This starts WIRED with hot-reload enabled — code changes in `src/renderer/` are reflected instantly.
 
-### Quick Launch (without a terminal)
-
-- **Windows**: Double-click `launch.bat`
-- **macOS / Linux**: Run `./launch.sh`
-
 ### Build for Production
 
 ```bash
@@ -136,12 +188,15 @@ npm run build
 ### Package for Distribution
 
 ```bash
-npm run package:win   # Windows (.exe installer + portable)
-npm run package:mac   # macOS (.dmg + .zip)
-npm run package:all   # Both platforms
+npm run package:win     # Windows (.exe installer + portable)
+npm run package:mac     # macOS (.dmg + .zip)
+npm run package:linux   # Linux (.AppImage + .deb)
+npm run package:all     # All platforms
 ```
 
-Packaged apps are output to the `dist/` directory.
+Packaged apps are output to the `release/` directory.
+
+</details>
 
 ---
 
@@ -223,7 +278,8 @@ Press **Ctrl+S** to save. WIRED also autosaves every 2 minutes to a temp file, s
 | Bundler | electron-vite (Vite 6) | Fast HMR for development |
 | UI framework | Vanilla TypeScript | No React/Vue/Angular overhead |
 | Persistence | electron-store | Window state, recent files, theme |
-| Packaging | electron-builder | Windows installer + portable, macOS DMG + ZIP |
+| Accessibility | axe-core | WCAG 2.1 AA validation engine |
+| Packaging | electron-builder | Windows installer + portable, macOS DMG, Linux AppImage |
 
 ---
 
@@ -233,19 +289,17 @@ Press **Ctrl+S** to save. WIRED also autosaves every 2 minutes to a temp file, s
 WIRED/
 ├── src/
 │   ├── main/              # Electron main process (file I/O, menus, IPC)
-│   ├── preload/            # Secure contextBridge API
-│   ├── renderer/           # All UI code
-│   │   ├── editor/         # CodeMirror wrapper, tab management
-│   │   ├── preview/        # iframe preview, drag-drop, grid overlay
-│   │   ├── toolbar/        # Formatting toolbar
-│   │   ├── properties/     # CSS + attribute property panel
-│   │   ├── layout/         # Resizable split pane
-│   │   └── sync/           # Bidirectional sync engine + HTML parser
-│   └── shared/             # Types, constants shared across processes
-├── copying/                # GNU GPL 3.0 license text
-├── resources/              # App icons (ico, icns, png)
-├── launch.bat              # Windows quick launch
-├── launch.sh               # macOS/Linux quick launch
+│   ├── preload/           # Secure contextBridge API
+│   ├── renderer/          # All UI code
+│   │   ├── editor/        # CodeMirror wrapper, tab management
+│   │   ├── preview/       # iframe preview, drag-drop, grid overlay
+│   │   ├── toolbar/       # Formatting toolbar
+│   │   ├── properties/    # CSS + attribute property panel
+│   │   ├── layout/        # Resizable split pane
+│   │   └── sync/          # Bidirectional sync engine + HTML parser
+│   └── shared/            # Types, constants shared across processes
+├── copying/               # GNU GPL 3.0 license text
+├── resources/             # App icons (ico, icns, png)
 └── package.json
 ```
 
@@ -272,7 +326,7 @@ Contributions are welcome! Please open an issue to discuss proposed changes befo
 ### Development Setup
 
 ```bash
-git clone https://github.com/your-username/WIRED.git
+git clone https://github.com/jeremyriel/WIRED.git
 cd WIRED
 npm install
 npm run dev
@@ -288,7 +342,7 @@ WIRED is free software released under the **GNU General Public License v3.0**.
 
 You can redistribute it and/or modify it under the terms of the GPL as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-See [copying/LICENSE_GNU_GPL_3.0.txt](copying/LICENSE_GNU_GPL_3.0.txt) for the full license text, or visit https://www.gnu.org/licenses/gpl-3.0.html.
+See [LICENSE](LICENSE) for the full license text, or visit https://www.gnu.org/licenses/gpl-3.0.html.
 
 ---
 
@@ -296,9 +350,3 @@ See [copying/LICENSE_GNU_GPL_3.0.txt](copying/LICENSE_GNU_GPL_3.0.txt) for the f
 
 **Jeremy Riel**
 [www.jeremyriel.com](https://www.jeremyriel.com)
-
----
-
-## Related Keywords
-
-WYSIWYG HTML editor, visual web editor, desktop HTML editor, Dreamweaver alternative, BlueGriffon alternative, free HTML editor, open source web editor, live preview HTML editor, code and visual editor, Electron HTML editor, split view HTML editor, drag and drop HTML editor, CSS visual editor, Google Fonts editor, accessible web editor, cross-platform HTML editor, offline HTML editor, local file HTML editor, CodeMirror editor, bidirectional sync editor
