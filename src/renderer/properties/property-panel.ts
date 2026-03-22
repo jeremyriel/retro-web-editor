@@ -1,0 +1,306 @@
+import { CSS_PROPERTY_GROUPS, HTML_ATTRIBUTES_BY_TAG } from '../../shared/constants'
+import { PreviewSelectMessage } from '../../shared/types'
+import { createColorInput } from './color-picker'
+
+const COLOR_PROPERTIES = new Set(['color', 'background-color'])
+let propInputIdCounter = 0
+
+export class PropertyPanel {
+  private container: HTMLElement
+  private cssSection: HTMLElement
+  private attrSection: HTMLElement
+  private tabButtons: NodeListOf<Element>
+  private currentSelection: PreviewSelectMessage | null = null
+  private onCSSChange: ((property: string, value: string) => void) | null = null
+  private onAttrChange: ((attr: string, value: string) => void) | null = null
+  private onGoogleFontsClick: (() => void) | null = null
+
+  constructor() {
+    this.container = document.getElementById('properties-panel')!
+    this.cssSection = document.getElementById('css-properties')!
+    this.attrSection = document.getElementById('attr-properties')!
+    this.tabButtons = document.querySelectorAll('.prop-tab')
+
+    // Tab switching
+    this.tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.tabButtons.forEach(b => {
+          b.classList.remove('active')
+          b.setAttribute('aria-selected', 'false')
+        })
+        btn.classList.add('active')
+        btn.setAttribute('aria-selected', 'true')
+        const tab = (btn as HTMLElement).dataset.tab
+        this.cssSection.classList.toggle('active', tab === 'css')
+        this.attrSection.classList.toggle('active', tab === 'attributes')
+      })
+    })
+
+    // Close button
+    document.getElementById('properties-close')!.addEventListener('click', () => {
+      this.hide()
+    })
+  }
+
+  show(): void {
+    this.container.classList.remove('hidden')
+  }
+
+  hide(): void {
+    this.container.classList.add('hidden')
+  }
+
+  toggle(): void {
+    this.container.classList.toggle('hidden')
+  }
+
+  isVisible(): boolean {
+    return !this.container.classList.contains('hidden')
+  }
+
+  setSelection(msg: PreviewSelectMessage): void {
+    this.currentSelection = msg
+    this.show()
+    this.renderCSS(msg.computedStyles)
+    this.renderAttributes(msg.tagName, msg.attributes)
+    document.getElementById('properties-title')!.textContent = `<${msg.tagName}>`
+  }
+
+  clearSelection(): void {
+    this.currentSelection = null
+    this.cssSection.innerHTML = '<div class="no-selection-msg">Click an element in the preview to inspect its properties</div>'
+    this.attrSection.innerHTML = '<div class="no-selection-msg">Click an element in the preview to inspect its attributes</div>'
+    document.getElementById('properties-title')!.textContent = 'Properties'
+  }
+
+  onCSSPropertyChange(callback: (property: string, value: string) => void): void {
+    this.onCSSChange = callback
+  }
+
+  onAttributeChange(callback: (attr: string, value: string) => void): void {
+    this.onAttrChange = callback
+  }
+
+  onGoogleFontsOpen(callback: () => void): void {
+    this.onGoogleFontsClick = callback
+  }
+
+  setFontFamily(value: string): void {
+    if (this.onCSSChange) this.onCSSChange('font-family', value)
+  }
+
+  private renderCSS(styles: Record<string, string>): void {
+    this.cssSection.innerHTML = ''
+
+    for (const [groupName, properties] of Object.entries(CSS_PROPERTY_GROUPS)) {
+      const group = document.createElement('div')
+      group.className = 'prop-group'
+
+      const title = document.createElement('div')
+      title.className = 'prop-group-title'
+      title.textContent = groupName
+      group.appendChild(title)
+
+      for (const prop of properties) {
+        const value = styles[prop] || ''
+        const row = document.createElement('div')
+        row.className = 'prop-row'
+
+        const inputId = `prop-css-${++propInputIdCounter}`
+        const label = document.createElement('label')
+        label.textContent = prop
+        label.title = prop
+        label.htmlFor = inputId
+        row.appendChild(label)
+
+        if (COLOR_PROPERTIES.has(prop)) {
+          const colorEl = createColorInput(value, prop, (newVal) => {
+            if (this.onCSSChange) this.onCSSChange(prop, newVal)
+          })
+          row.appendChild(colorEl)
+        } else {
+          const input = document.createElement('input')
+          input.type = 'text'
+          input.id = inputId
+          input.value = value
+          input.addEventListener('change', () => {
+            if (this.onCSSChange) this.onCSSChange(prop, input.value)
+          })
+          row.appendChild(input)
+
+          if (prop === 'font-family') {
+            const gfBtn = document.createElement('button')
+            gfBtn.className = 'gfonts-prop-btn'
+            gfBtn.type = 'button'
+            gfBtn.title = 'Browse Google Fonts'
+            gfBtn.setAttribute('aria-label', 'Browse Google Fonts')
+            gfBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+            gfBtn.addEventListener('click', () => {
+              if (this.onGoogleFontsClick) this.onGoogleFontsClick()
+            })
+            row.appendChild(gfBtn)
+          }
+        }
+
+        group.appendChild(row)
+      }
+
+      this.cssSection.appendChild(group)
+    }
+  }
+
+  private renderAttributes(tagName: string, attributes: Record<string, string>): void {
+    this.attrSection.innerHTML = ''
+
+    const commonAttrs = HTML_ATTRIBUTES_BY_TAG['*'] || []
+    const tagAttrs = HTML_ATTRIBUTES_BY_TAG[tagName] || []
+    const allAttrs = [...new Set([...commonAttrs, ...tagAttrs])]
+
+    for (const key of Object.keys(attributes)) {
+      if (!allAttrs.includes(key)) allAttrs.push(key)
+    }
+
+    // Image alt text warning and decorative checkbox
+    if (tagName === 'img') {
+      const altValue = attributes['alt']
+      const isDecorative = altValue === '' && attributes['role'] === 'presentation'
+      const hasAlt = altValue !== undefined && altValue !== null
+
+      if (!hasAlt) {
+        const warning = document.createElement('div')
+        warning.className = 'alt-warning'
+        warning.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Missing alt text — add alt text or mark as decorative'
+        this.attrSection.appendChild(warning)
+      }
+
+      const decorativeRow = document.createElement('div')
+      decorativeRow.className = 'prop-row decorative-row'
+      const checkId = `prop-decorative-${++propInputIdCounter}`
+      const checkbox = document.createElement('input')
+      checkbox.type = 'checkbox'
+      checkbox.id = checkId
+      checkbox.checked = isDecorative
+      const checkLabel = document.createElement('label')
+      checkLabel.htmlFor = checkId
+      checkLabel.textContent = 'Mark as decorative'
+      checkLabel.title = 'Sets alt="" and role="presentation" — use for images that are purely visual and convey no information'
+      decorativeRow.appendChild(checkbox)
+      decorativeRow.appendChild(checkLabel)
+
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          if (this.onAttrChange) {
+            this.onAttrChange('alt', '')
+            this.onAttrChange('role', 'presentation')
+          }
+          // Update local state and re-render
+          if (this.currentSelection) {
+            this.currentSelection.attributes['alt'] = ''
+            this.currentSelection.attributes['role'] = 'presentation'
+            this.renderAttributes(tagName, this.currentSelection.attributes)
+          }
+        } else {
+          if (this.onAttrChange) {
+            this.onAttrChange('role', '')
+          }
+          if (this.currentSelection) {
+            delete this.currentSelection.attributes['role']
+            this.renderAttributes(tagName, this.currentSelection.attributes)
+          }
+        }
+      })
+
+      this.attrSection.appendChild(decorativeRow)
+
+      // Prominent alt text field
+      const altField = document.createElement('div')
+      altField.className = 'alt-field'
+      const altLabelId = `prop-alt-prominent-${++propInputIdCounter}`
+      const altLabel = document.createElement('label')
+      altLabel.htmlFor = altLabelId
+      altLabel.textContent = 'Alt Text'
+      altField.appendChild(altLabel)
+      const altTextarea = document.createElement('textarea')
+      altTextarea.id = altLabelId
+      altTextarea.className = 'alt-textarea'
+      altTextarea.value = attributes['alt'] || ''
+      altTextarea.placeholder = 'Describe this image for screen readers…'
+      altTextarea.disabled = isDecorative
+      altTextarea.addEventListener('change', () => {
+        if (this.onAttrChange) this.onAttrChange('alt', altTextarea.value)
+        if (this.currentSelection) {
+          this.currentSelection.attributes['alt'] = altTextarea.value
+          this.renderAttributes(tagName, this.currentSelection.attributes)
+        }
+      })
+      altField.appendChild(altTextarea)
+      this.attrSection.appendChild(altField)
+    }
+
+    const group = document.createElement('div')
+    group.className = 'prop-group'
+
+    const title = document.createElement('div')
+    title.className = 'prop-group-title'
+    title.textContent = `${tagName} attributes`
+    group.appendChild(title)
+
+    for (const attr of allAttrs) {
+      // Skip alt for images — handled by prominent field above
+      if (tagName === 'img' && attr === 'alt') continue
+
+      const row = document.createElement('div')
+      row.className = 'prop-row'
+
+      const inputId = `prop-attr-${++propInputIdCounter}`
+      const label = document.createElement('label')
+      label.textContent = attr
+      label.title = attr
+      label.htmlFor = inputId
+      row.appendChild(label)
+
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.id = inputId
+      input.value = attributes[attr] || ''
+      input.placeholder = `(${attr})`
+      input.addEventListener('change', () => {
+        if (this.onAttrChange) this.onAttrChange(attr, input.value)
+      })
+      row.appendChild(input)
+
+      group.appendChild(row)
+    }
+
+    // Add custom attribute row
+    const addRow = document.createElement('div')
+    addRow.className = 'prop-row'
+    addRow.style.marginTop = '8px'
+    const addBtn = document.createElement('button')
+    addBtn.textContent = '+ Add attribute'
+    addBtn.style.cssText = 'width:100%;padding:4px;border:1px dashed var(--input-border);background:transparent;color:var(--text-secondary);cursor:pointer;border-radius:3px;font-size:0.6875rem;'
+    addBtn.addEventListener('click', () => {
+      const name = prompt('Attribute name:')
+      if (name) {
+        const value = prompt('Attribute value:') || ''
+        if (this.onAttrChange) this.onAttrChange(name, value)
+        if (this.currentSelection) {
+          this.currentSelection.attributes[name] = value
+          this.renderAttributes(tagName, this.currentSelection.attributes)
+        }
+      }
+    })
+    addRow.appendChild(addBtn)
+    group.appendChild(addRow)
+
+    this.attrSection.appendChild(group)
+  }
+}
+
+// This file is part of Web Interface Retro Editor for Desktop (WIRED).
+//
+// Web Interface Retro Editor for Desktop is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+//
+// Web Interface Retro Editor for Desktop is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License 3.0 along with Web Interface Retro Editor for Desktop in the /copying folder or on the About page in the Help menu. If not, see <https://www.gnu.org/licenses/>.

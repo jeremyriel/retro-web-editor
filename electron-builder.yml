@@ -1,0 +1,25 @@
+appId: com.wired.editor
+productName: WIRED
+directories:
+  buildResources: resources
+  output: release
+files:
+  - out/**/*
+extraResources:
+  - from: copying
+    to: copying
+  - from: resources/icon.png
+    to: icon.png
+win:
+  target:
+    - nsis
+    - portable
+  icon: resources/icon.ico
+mac:
+  target:
+    - dmg
+    - zip
+  icon: resources/icon.icns
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
