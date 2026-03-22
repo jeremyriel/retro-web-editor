@@ -5,6 +5,7 @@
   "main": "out/main/index.js",
   "author": {
     "name": "Jeremy Riel",
+    "email": "jriel2@uic.edu",
     "url": "https://www.jeremyriel.com"
   },
   "license": "GPL-3.0-or-later",
