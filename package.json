@@ -1,7 +1,7 @@
 {
-  "name": "wired",
+  "name": "retro-web-editor",
   "version": "1.0.0",
-  "description": "Web Interface Retro Editor for Desktop (WIRED) — A lightweight WYSIWYG HTML editor",
+  "description": "Retro Web Editor — A lightweight WYSIWYG HTML editor for desktop",
   "main": "out/main/index.js",
   "author": {
     "name": "Jeremy Riel",
@@ -9,13 +9,13 @@
     "url": "https://www.jeremyriel.com"
   },
   "license": "GPL-3.0-or-later",
-  "homepage": "https://github.com/jeremyriel/WIRED",
+  "homepage": "https://github.com/jeremyriel/retro-web-editor",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jeremyriel/WIRED.git"
+    "url": "https://github.com/jeremyriel/retro-web-editor.git"
   },
   "bugs": {
-    "url": "https://github.com/jeremyriel/WIRED/issues"
+    "url": "https://github.com/jeremyriel/retro-web-editor/issues"
   },
   "keywords": [
     "html-editor",

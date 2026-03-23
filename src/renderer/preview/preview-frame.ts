@@ -36,7 +36,7 @@ export class PreviewFrame {
 
     // If CSS-only update — try hot-swap
     if (cssOverrides !== undefined && this.iframe.contentDocument) {
-      const existingStyle = this.iframe.contentDocument.getElementById('wired-css-override')
+      const existingStyle = this.iframe.contentDocument.getElementById('rwe-css-override')
       if (existingStyle) {
         existingStyle.textContent = cssOverrides
         return
@@ -61,18 +61,18 @@ export class PreviewFrame {
 
     // Full content update
     const doc = `${contentWithBase}
-<style id="wired-injected-styles">${injectedCSS}</style>
-<script id="wired-injected-script">${injectedScript}<\/script>`
+<style id="rwe-injected-styles">${injectedCSS}</style>
+<script id="rwe-injected-script">${injectedScript}<\/script>`
 
     this.iframe.srcdoc = doc
   }
 
   updateCSS(cssContent: string): void {
     if (!this.iframe.contentDocument) return
-    let styleEl = this.iframe.contentDocument.getElementById('wired-css-override') as HTMLStyleElement
+    let styleEl = this.iframe.contentDocument.getElementById('rwe-css-override') as HTMLStyleElement
     if (!styleEl) {
       styleEl = this.iframe.contentDocument.createElement('style')
-      styleEl.id = 'wired-css-override'
+      styleEl.id = 'rwe-css-override'
       this.iframe.contentDocument.head.appendChild(styleEl)
     }
     styleEl.textContent = cssContent
@@ -81,7 +81,7 @@ export class PreviewFrame {
   setOutlines(enabled: boolean): void {
     this.showOutlines = enabled
     if (this.iframe.contentDocument) {
-      const styleEl = this.iframe.contentDocument.getElementById('wired-outline-styles')
+      const styleEl = this.iframe.contentDocument.getElementById('rwe-outline-styles')
       if (styleEl) {
         styleEl.textContent = enabled ? this.getOutlineCSS() : ''
       }
@@ -90,7 +90,7 @@ export class PreviewFrame {
 
   setDragDrop(enabled: boolean): void {
     this.dragDropEnabled = enabled
-    this.iframe.contentWindow?.postMessage({ type: 'wired-set-dragdrop', enabled }, '*')
+    this.iframe.contentWindow?.postMessage({ type: 'rwe-set-dragdrop', enabled }, '*')
   }
 
   onPreviewMessage(callback: (msg: PreviewMessage) => void): void {
@@ -170,7 +170,7 @@ export class PreviewFrame {
         var current = el;
         while (current && current.nodeType === 1) {
           var part = current.tagName.toLowerCase();
-          if (current.id && !current.id.startsWith('wired-')) {
+          if (current.id && !current.id.startsWith('rwe-')) {
             part += '#' + current.id;
           } else if (current.className && typeof current.className === 'string') {
             part += '.' + current.className.trim().split(/\\s+/).join('.');
@@ -179,9 +179,9 @@ export class PreviewFrame {
           var parent = current.parentElement;
           if (parent) {
             var siblings = Array.from(parent.children).filter(function(c) {
-              return c.tagName === current.tagName && !(c.id && c.id.startsWith('wired-'));
+              return c.tagName === current.tagName && !(c.id && c.id.startsWith('rwe-'));
             });
-            if (siblings.length > 1 || !(current.id && !current.id.startsWith('wired-'))) {
+            if (siblings.length > 1 || !(current.id && !current.id.startsWith('rwe-'))) {
               var idx = siblings.indexOf(current) + 1;
               part += ':nth-of-type(' + idx + ')';
             }
@@ -216,7 +216,7 @@ export class PreviewFrame {
       function getAttributes(el) {
         const attrs = {};
         for (const attr of el.attributes) {
-          if (!attr.name.startsWith('data-wired')) {
+          if (!attr.name.startsWith('data-rwe')) {
             attrs[attr.name] = attr.value;
           }
         }
@@ -225,7 +225,7 @@ export class PreviewFrame {
 
       document.addEventListener('click', function(e) {
         // Ignore clicks on injected elements
-        if (e.target.id && e.target.id.startsWith('wired-')) return;
+        if (e.target.id && e.target.id.startsWith('rwe-')) return;
 
         e.preventDefault();
         e.stopPropagation();
@@ -305,7 +305,7 @@ export class PreviewFrame {
 
       // Drag and drop
       window.addEventListener('message', function(e) {
-        if (e.data?.type === 'wired-set-dragdrop') {
+        if (e.data?.type === 'rwe-set-dragdrop') {
           dragDropEnabled = e.data.enabled;
           document.querySelectorAll('[draggable]').forEach(el => el.removeAttribute('draggable'));
           if (dragDropEnabled) {
@@ -340,7 +340,7 @@ export class PreviewFrame {
         // Show insertion marker
         if (!dragMarker) {
           dragMarker = document.createElement('div');
-          dragMarker.id = 'wired-drag-marker';
+          dragMarker.id = 'rwe-drag-marker';
           dragMarker.style.cssText = 'height:3px;background:#0066cc;position:absolute;left:0;right:0;pointer-events:none;z-index:99999;border-radius:2px;';
         }
 
@@ -375,10 +375,10 @@ export class PreviewFrame {
   }
 }
 
-// This file is part of Web Interface Retro Editor for Desktop (WIRED).
+// This file is part of Retro Web Editor.
 //
-// Web Interface Retro Editor for Desktop is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+// Retro Web Editor is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 //
-// Web Interface Retro Editor for Desktop is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+// Retro Web Editor is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License 3.0 along with Web Interface Retro Editor for Desktop in the /copying folder or on the About page in the Help menu. If not, see <https://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU General Public License 3.0 along with Retro Web Editor in the /copying folder or on the About page in the Help menu. If not, see <https://www.gnu.org/licenses/>.

@@ -1,5 +1,5 @@
-appId: com.wired.editor
-productName: WIRED
+appId: com.retrowebeditor.app
+productName: Retro Web Editor
 copyright: "Copyright (C) 2026 Jeremy Riel. Licensed under GNU GPL v3.0."
 
 directories:
@@ -36,7 +36,7 @@ linux:
   icon: resources/icon.png
   category: Development
   synopsis: "A lightweight WYSIWYG HTML editor for desktop"
-  description: "Web Interface Retro Editor for Desktop — Edit HTML visually with real-time live preview"
+  description: "Retro Web Editor — Edit HTML visually with real-time live preview"
 
 nsis:
   oneClick: false
@@ -45,7 +45,7 @@ nsis:
   allowElevation: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: "WIRED"
+  shortcutName: "Retro Web Editor"
   license: copying/LICENSE_GNU_GPL_3.0.txt
   installerIcon: resources/icon.ico
   uninstallerIcon: resources/icon.ico
@@ -53,8 +53,8 @@ nsis:
   deleteAppDataOnUninstall: false
 
 dmg:
-  title: "WIRED ${version}"
-  artifactName: "WIRED-${version}-mac.${ext}"
+  title: "Retro Web Editor ${version}"
+  artifactName: "RetroWebEditor-${version}-mac.${ext}"
 
 portable:
-  artifactName: "WIRED-${version}-portable.${ext}"
+  artifactName: "RetroWebEditor-${version}-portable.${ext}"

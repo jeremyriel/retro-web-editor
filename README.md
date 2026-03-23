@@ -1,26 +1,24 @@
 <div align="center">
-  <img src="logo.png" alt="WIRED Logo" width="128" height="128" style="image-rendering: pixelated;">
-  <h1>WIRED — Web Interface Retro Editor for Desktop</h1>
+  <img src="logo.png" alt="Retro Web Editor Logo" width="128" height="128" style="image-rendering: pixelated;">
+  <h1>Retro Web Editor</h1>
   <p><strong>A free, open-source, lightweight WYSIWYG HTML editor for desktop.</strong></p>
   <p>Edit HTML, CSS, and JavaScript files visually or in code with real-time live preview — no browser or server required.</p>
   <p>
-    <a href="https://github.com/jeremyriel/WIRED/releases/latest"><img src="https://img.shields.io/github/v/release/jeremyriel/WIRED?style=flat-square" alt="Latest Release"></a>
+    <a href="https://github.com/jeremyriel/retro-web-editor/releases/latest"><img src="https://img.shields.io/github/v/release/jeremyriel/retro-web-editor?style=flat-square" alt="Latest Release"></a>
     <a href="copying/LICENSE_GNU_GPL_3.0.txt"><img src="https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square" alt="License: GPL-3.0"></a>
-    <a href="https://github.com/jeremyriel/WIRED/releases"><img src="https://img.shields.io/github/downloads/jeremyriel/WIRED/total?style=flat-square" alt="Downloads"></a>
+    <a href="https://github.com/jeremyriel/retro-web-editor/releases"><img src="https://img.shields.io/github/downloads/jeremyriel/retro-web-editor/total?style=flat-square" alt="Downloads"></a>
   </p>
 </div>
 
 ---
 
-## Why WIRED?
+## Why Retro Web Editor?
 
 Sometimes you just want to quickly edit web files on desktop visually!
 
-That's where Web Interface Retro Editor for Desktop (WIRED) comes in.
-
 I made this app initially for myself because the longstanding desktop web publishing apps have been discontinued (Dreamweaver CS6, BlueGriffon), are cloud-only, or are embedded within heavyweight software development tools that consume a lot of system resources.
 
-WIRED fills a gap as a **focused, fast, desktop-native WYSIWYG editor** that opens your local HTML files and lets you edit them visually — with the code always visible and in sync.
+Retro Web Editor fills a gap as a **focused, fast, desktop-native WYSIWYG editor** that opens your local HTML files and lets you edit them visually — with the code always visible and in sync.
 
 **Built for web designers, educators, students, and front-end developers** who want a simple, capable tool for quick editing of HTML and CSS without the overhead of a full IDE.
 
@@ -66,7 +64,7 @@ WIRED fills a gap as a **focused, fast, desktop-native WYSIWYG editor** that ope
 - **Smart file linking** — opening an HTML file auto-detects and opens its linked CSS and JavaScript files as additional tabs
 - **Open Recent** — modal with up to 10 recently edited files, one-click open or remove
 - **Autosave** — automatic backup every 2 minutes to a temp file, plus an immediate save when files are opened
-- **Autosave recovery** — if WIRED detects an unsaved autosave that differs from the saved file, it prompts you to restore or discard the recovery
+- **Autosave recovery** — if Retro Web Editor detects an unsaved autosave that differs from the saved file, it prompts you to restore or discard the recovery
 - **Save-on-exit** — native Save / Don't Save / Cancel dialog for unsaved files
 
 ### WCAG Accessibility Validator
@@ -123,14 +121,14 @@ All `Ctrl` shortcuts use `Cmd` on macOS.
 
 ### Download Pre-Built Installers
 
-Download the latest version for your platform from the [Releases page](https://github.com/jeremyriel/WIRED/releases/latest):
+Download the latest version for your platform from the [Releases page](https://github.com/jeremyriel/retro-web-editor/releases/latest):
 
 | Platform | Download | Notes |
 |---|---|---|
-| **Windows** (installer) | `WIRED-Setup-x.x.x.exe` | Guided installer with desktop shortcut |
-| **Windows** (portable) | `WIRED-x.x.x-portable.exe` | No installation needed — runs from any folder |
-| **macOS** | `WIRED-x.x.x-mac.dmg` | Open the DMG and drag WIRED to your Applications folder |
-| **Linux** | `WIRED-x.x.x.AppImage` | Make executable with `chmod +x` and run |
+| **Windows** (installer) | `RetroWebEditor-Setup-x.x.x.exe` | Guided installer with desktop shortcut |
+| **Windows** (portable) | `RetroWebEditor-x.x.x-portable.exe` | No installation needed — runs from any folder |
+| **macOS** | `RetroWebEditor-x.x.x-mac.dmg` | Open the DMG and drag to your Applications folder |
+| **Linux** | `RetroWebEditor-x.x.x.AppImage` | Make executable with `chmod +x` and run |
 
 ### Windows Installation
 
@@ -138,20 +136,20 @@ Download the latest version for your platform from the [Releases page](https://g
 2. Run the installer — you'll see the license agreement (GNU GPL v3.0)
 3. Choose an install location (the default is fine for most users)
 4. A desktop shortcut and Start Menu entry will be created automatically
-5. Launch WIRED from the desktop or Start Menu
+5. Launch Retro Web Editor from the desktop or Start Menu
 
 ### macOS Installation
 
 1. Download the `.dmg` file from the link above
 2. Open the DMG file
-3. Drag the WIRED icon into your Applications folder
-4. Launch WIRED from Applications (you may need to right-click > Open the first time, since the app is not signed with an Apple Developer certificate)
+3. Drag the Retro Web Editor icon into your Applications folder
+4. Launch from Applications (you may need to right-click > Open the first time, since the app is not signed with an Apple Developer certificate)
 
 ### Linux Installation
 
 1. Download the `.AppImage` file from the link above
-2. Make it executable: `chmod +x WIRED-*.AppImage`
-3. Run it: `./WIRED-*.AppImage`
+2. Make it executable: `chmod +x RetroWebEditor-*.AppImage`
+3. Run it: `./RetroWebEditor-*.AppImage`
 
 ---
 
@@ -166,8 +164,8 @@ Download the latest version for your platform from the [Releases page](https://g
 ### Clone and Install
 
 ```bash
-git clone https://github.com/jeremyriel/WIRED.git
-cd WIRED
+git clone https://github.com/jeremyriel/retro-web-editor.git
+cd retro-web-editor
 npm install
 ```
 
@@ -177,7 +175,7 @@ npm install
 npm run dev
 ```
 
-This starts WIRED with hot-reload enabled — code changes in `src/renderer/` are reflected instantly.
+This starts Retro Web Editor with hot-reload enabled — code changes in `src/renderer/` are reflected instantly.
 
 ### Build for Production
 
@@ -217,7 +215,7 @@ Create a new file called `index.html` in any folder on your computer:
 </head>
 <body>
   <h1>Hello, World!</h1>
-  <p>This is my first page in WIRED.</p>
+  <p>This is my first page in Retro Web Editor.</p>
 </body>
 </html>
 ```
@@ -237,9 +235,9 @@ h1 {
 }
 ```
 
-### 2. Open in WIRED
+### 2. Open in Retro Web Editor
 
-Launch WIRED and press **Ctrl+O** (Cmd+O on Mac) to open `index.html`. WIRED will automatically detect `style.css` and open it as a second tab.
+Launch Retro Web Editor and press **Ctrl+O** (Cmd+O on Mac) to open `index.html`. It will automatically detect `style.css` and open it as a second tab.
 
 ### 3. Edit Visually
 
@@ -254,7 +252,7 @@ Launch WIRED and press **Ctrl+O** (Cmd+O on Mac) to open `index.html`. WIRED wil
 2. In the Properties panel, find **font-family** under Typography
 3. Click the **search icon** button next to the input
 4. Search for a font (e.g., "Inter"), click **Add & Use**
-5. WIRED inserts the Google Fonts `<link>` tag into your `<head>` and applies the font
+5. The Google Fonts `<link>` tag is inserted into your `<head>` and the font is applied
 
 ### 5. Add a Link
 
@@ -264,7 +262,7 @@ Launch WIRED and press **Ctrl+O** (Cmd+O on Mac) to open `index.html`. WIRED wil
 
 ### 6. Save
 
-Press **Ctrl+S** to save. WIRED also autosaves every 2 minutes to a temp file, so you won't lose work if something goes wrong.
+Press **Ctrl+S** to save. Retro Web Editor also autosaves every 2 minutes to a temp file, so you won't lose work if something goes wrong.
 
 ---
 
@@ -286,7 +284,7 @@ Press **Ctrl+S** to save. WIRED also autosaves every 2 minutes to a temp file, s
 ## Project Structure
 
 ```
-WIRED/
+retro-web-editor/
 ├── src/
 │   ├── main/              # Electron main process (file I/O, menus, IPC)
 │   ├── preload/           # Secure contextBridge API
@@ -307,13 +305,13 @@ WIRED/
 
 ## How Bidirectional Sync Works
 
-WIRED's core innovation is its **bidirectional sync engine** that keeps the code editor and visual preview in perfect lockstep:
+The core innovation is the **bidirectional sync engine** that keeps the code editor and visual preview in perfect lockstep:
 
 1. **Code to Preview** — When you type in the code editor, a 300ms debounced update rebuilds the source map and refreshes the preview iframe. CSS-only changes are hot-swapped without a full reload.
 
-2. **Preview to Code** — When you click or drag an element in the preview, WIRED computes a CSS selector path for that DOM node and matches it to a source position in the HTML via a custom parser with offset tracking. The code editor then scrolls to and selects the corresponding source.
+2. **Preview to Code** — When you click or drag an element in the preview, a CSS selector path is computed for that DOM node and matched to a source position in the HTML via a custom parser with offset tracking. The code editor then scrolls to and selects the corresponding source.
 
-3. **Property to Code** — When you change a CSS property or HTML attribute in the Properties panel, WIRED writes the change directly into the source code at the correct offset, and the preview updates from the new code.
+3. **Property to Code** — When you change a CSS property or HTML attribute in the Properties panel, the change is written directly into the source code at the correct offset, and the preview updates from the new code.
 
 4. **Loop Prevention** — Every edit is tagged with its origin (`code`, `visual`, or `property`). The sync engine ignores updates that originated from the destination it's about to write to, preventing infinite loops.
 
@@ -326,8 +324,8 @@ Contributions are welcome! Please open an issue to discuss proposed changes befo
 ### Development Setup
 
 ```bash
-git clone https://github.com/jeremyriel/WIRED.git
-cd WIRED
+git clone https://github.com/jeremyriel/retro-web-editor.git
+cd retro-web-editor
 npm install
 npm run dev
 ```
@@ -338,7 +336,7 @@ The app launches with hot-reload. Changes to renderer code update instantly; mai
 
 ## License
 
-WIRED is free software released under the **GNU General Public License v3.0**.
+Retro Web Editor is free software released under the **GNU General Public License v3.0**.
 
 You can redistribute it and/or modify it under the terms of the GPL as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 

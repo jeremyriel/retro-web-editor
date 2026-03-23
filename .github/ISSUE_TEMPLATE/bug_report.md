@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in WIRED
+about: Report a bug in Retro Web Editor
 title: "[Bug] "
 labels: bug
 ---
@@ -22,5 +22,5 @@ If applicable, add screenshots to help explain the problem.
 
 **Environment**
 - OS: [e.g., Windows 11, macOS 15, Ubuntu 24.04]
-- WIRED version: [e.g., 1.0.0]
+- Retro Web Editor version: [e.g., 1.0.0]
 - Installation type: [installer, portable, AppImage, or built from source]
