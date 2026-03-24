@@ -1,6 +1,6 @@
 {
   "name": "retro-web-editor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Retro Web Editor — A lightweight WYSIWYG HTML editor for desktop",
   "main": "out/main/index.js",
   "author": {
