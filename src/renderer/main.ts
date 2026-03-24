@@ -11,6 +11,7 @@ import { findNodeBySelector } from './sync/html-parser'
 import { FileTab, FileType, PreviewSelectMessage } from '../shared/types'
 import { AUTOSAVE_INTERVAL_MS } from '../shared/constants'
 import axe from 'axe-core'
+import axeSource from 'axe-core/axe.min.js?raw'
 
 declare global {
   interface Window {
@@ -593,7 +594,6 @@ async function runWcagValidation(): Promise<void> {
   // Create a temporary hidden iframe with the raw user HTML
   const tempFrame = document.createElement('iframe')
   tempFrame.style.cssText = 'position:fixed;left:-9999px;top:0;width:1024px;height:768px;border:none;'
-  tempFrame.setAttribute('sandbox', 'allow-scripts allow-same-origin')
   document.body.appendChild(tempFrame)
 
   try {
@@ -604,13 +604,13 @@ async function runWcagValidation(): Promise<void> {
       tempFrame.addEventListener('load', () => { clearTimeout(timer); resolve() })
     })
 
-    // Inject axe-core source into the iframe
+    // Inject axe-core source into the iframe and run it there
     const axeScript = tempFrame.contentDocument!.createElement('script')
-    axeScript.textContent = axe.source
+    axeScript.textContent = axeSource
     tempFrame.contentDocument!.head.appendChild(axeScript)
 
     // Run axe in the iframe context
-    const results: AxeResult = await tempFrame.contentWindow!.axe.run({
+    const results: AxeResult = await (tempFrame.contentWindow as any).axe.run({
       runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
     })
 
@@ -666,7 +666,7 @@ function renderWcagResults(results: AxeResult): void {
   if (results.passes.length > 0) {
     const title = document.createElement('div')
     title.className = 'wcag-section-title passes'
-    title.textContent = `Passed (${results.passes.length})`
+    title.textContent = `▶ Passed (${results.passes.length}) — click to expand`
     title.style.cursor = 'pointer'
     wcagResults.appendChild(title)
     const passContainer = document.createElement('div')
@@ -680,7 +680,9 @@ function renderWcagResults(results: AxeResult): void {
       passContainer.style.display = isHidden ? 'flex' : 'none'
       passContainer.style.flexDirection = 'column'
       passContainer.style.gap = '8px'
-      title.textContent = `Passed (${results.passes.length}) ${isHidden ? '▼' : '▶'}`
+      title.textContent = isHidden
+        ? `▼ Passed (${results.passes.length}) — click to collapse`
+        : `▶ Passed (${results.passes.length}) — click to expand`
     })
   }
 }
