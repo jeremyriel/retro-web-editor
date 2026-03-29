@@ -1,5 +1,5 @@
 import { CSS_PROPERTY_GROUPS, HTML_ATTRIBUTES_BY_TAG } from '../../shared/constants'
-import { PreviewSelectMessage } from '../../shared/types'
+import { MatchedCSSRule, PreviewSelectMessage } from '../../shared/types'
 import { createColorInput } from './color-picker'
 
 const COLOR_PROPERTIES = new Set(['color', 'background-color'])
@@ -8,16 +8,22 @@ let propInputIdCounter = 0
 export class PropertyPanel {
   private container: HTMLElement
   private cssSection: HTMLElement
+  private stylesheetSection: HTMLElement
   private attrSection: HTMLElement
   private tabButtons: NodeListOf<Element>
   private currentSelection: PreviewSelectMessage | null = null
   private onCSSChange: ((property: string, value: string) => void) | null = null
   private onAttrChange: ((attr: string, value: string) => void) | null = null
+  private onStylesheetRuleChange: ((rule: MatchedCSSRule, newProperties: string) => void) | null = null
+  private onAddStylesheetRule: ((selector: string) => void) | null = null
+  private getPreferredCSSSource: (() => string) | null = null
   private onGoogleFontsClick: (() => void) | null = null
+  private pendingStylesheetCommits: (() => void)[] = []
 
   constructor() {
     this.container = document.getElementById('properties-panel')!
     this.cssSection = document.getElementById('css-properties')!
+    this.stylesheetSection = document.getElementById('stylesheet-properties')!
     this.attrSection = document.getElementById('attr-properties')!
     this.tabButtons = document.querySelectorAll('.prop-tab')
 
@@ -32,6 +38,7 @@ export class PropertyPanel {
         btn.setAttribute('aria-selected', 'true')
         const tab = (btn as HTMLElement).dataset.tab
         this.cssSection.classList.toggle('active', tab === 'css')
+        this.stylesheetSection.classList.toggle('active', tab === 'stylesheet')
         this.attrSection.classList.toggle('active', tab === 'attributes')
       })
     })
@@ -62,15 +69,32 @@ export class PropertyPanel {
     this.currentSelection = msg
     this.show()
     this.renderCSS(msg.computedStyles)
+    this.renderStylesheet(msg.matchedRules || [])
     this.renderAttributes(msg.tagName, msg.attributes)
     document.getElementById('properties-title')!.textContent = `<${msg.tagName}>`
+
+    // Show element info bar with tag, id, class
+    const infoBar = document.getElementById('properties-element-info')!
+    infoBar.classList.remove('hidden')
+    document.getElementById('element-info-tag')!.textContent = msg.tagName
+    const idVal = msg.attributes['id'] || ''
+    const idEl = document.getElementById('element-info-id')!
+    idEl.textContent = idVal ? `#${idVal}` : ''
+    idEl.classList.toggle('hidden', !idVal)
+    const classVal = msg.attributes['class'] || ''
+    const classEl = document.getElementById('element-info-class')!
+    classEl.textContent = classVal ? `.${classVal.trim().split(/\s+/).join('.')}` : ''
+    classEl.classList.toggle('hidden', !classVal)
   }
 
   clearSelection(): void {
+    this.flushPendingStylesheetCommits()
     this.currentSelection = null
     this.cssSection.innerHTML = '<div class="no-selection-msg">Click an element in the preview to inspect its properties</div>'
+    this.stylesheetSection.innerHTML = '<div class="no-selection-msg">Click an element in the preview to see stylesheet rules</div>'
     this.attrSection.innerHTML = '<div class="no-selection-msg">Click an element in the preview to inspect its attributes</div>'
     document.getElementById('properties-title')!.textContent = 'Properties'
+    document.getElementById('properties-element-info')!.classList.add('hidden')
   }
 
   onCSSPropertyChange(callback: (property: string, value: string) => void): void {
@@ -79,6 +103,18 @@ export class PropertyPanel {
 
   onAttributeChange(callback: (attr: string, value: string) => void): void {
     this.onAttrChange = callback
+  }
+
+  onStylesheetRuleChanged(callback: (rule: MatchedCSSRule, newProperties: string) => void): void {
+    this.onStylesheetRuleChange = callback
+  }
+
+  onAddRule(callback: (selector: string) => void): void {
+    this.onAddStylesheetRule = callback
+  }
+
+  setPreferredCSSSource(fn: () => string): void {
+    this.getPreferredCSSSource = fn
   }
 
   onGoogleFontsOpen(callback: () => void): void {
@@ -147,6 +183,189 @@ export class PropertyPanel {
 
       this.cssSection.appendChild(group)
     }
+  }
+
+  private flushPendingStylesheetCommits(): void {
+    const commits = this.pendingStylesheetCommits.splice(0)
+    for (const fn of commits) fn()
+  }
+
+  private renderStylesheet(rules: MatchedCSSRule[]): void {
+    this.flushPendingStylesheetCommits()
+    this.stylesheetSection.innerHTML = ''
+
+    // "Add Rule" section — offer to create rules for tag, classes, id
+    if (this.currentSelection && this.onAddStylesheetRule) {
+      const sel = this.currentSelection
+      const addGroup = document.createElement('div')
+      addGroup.className = 'prop-group'
+      const addTitle = document.createElement('div')
+      addTitle.className = 'prop-group-title'
+      addTitle.textContent = 'Add rule'
+      addGroup.appendChild(addTitle)
+
+      const selectors: string[] = []
+      selectors.push(sel.tagName)
+      const classVal = sel.attributes['class'] || ''
+      if (classVal) {
+        for (const cls of classVal.trim().split(/\s+/)) {
+          selectors.push(`.${cls}`)
+        }
+      }
+      const idVal = sel.attributes['id'] || ''
+      if (idVal) {
+        selectors.push(`#${idVal}`)
+      }
+
+      // Only show selectors that don't already have a direct rule
+      const existingSelectors = new Set(rules.filter(r => !r.inherited).map(r => r.selector))
+      const newSelectors = selectors.filter(s => !existingSelectors.has(s))
+
+      if (newSelectors.length > 0) {
+        const row = document.createElement('div')
+        row.className = 'stylesheet-add-row'
+        for (const s of newSelectors) {
+          const btn = document.createElement('button')
+          btn.className = 'stylesheet-add-btn'
+          btn.textContent = `+ ${s}`
+          btn.title = `Add ${s} { } rule to stylesheet`
+          btn.addEventListener('click', () => {
+            if (this.onAddStylesheetRule) this.onAddStylesheetRule(s)
+            // Determine the source: first open CSS tab filename, else 'embedded'
+            const cssTabName = this.getPreferredCSSSource?.() || 'embedded'
+            // Remove the button and add an editable rule block in its place
+            btn.remove()
+            const newRule: MatchedCSSRule = {
+              selector: s,
+              cssText: `${s} {  }`,
+              properties: '',
+              source: cssTabName,
+              specificity: s.startsWith('#') ? 'id' : s.startsWith('.') ? 'class' : 'element',
+              inherited: false,
+            }
+            this.appendRuleBlock(newRule)
+          })
+          row.appendChild(btn)
+        }
+        addGroup.appendChild(row)
+        this.stylesheetSection.appendChild(addGroup)
+      }
+    }
+
+    if (rules.length === 0) {
+      if (!this.stylesheetSection.hasChildNodes()) {
+        this.stylesheetSection.innerHTML = '<div class="no-selection-msg">No stylesheet rules match this element</div>'
+      }
+      return
+    }
+
+    // Group by source
+    const directRules = rules.filter(r => !r.inherited)
+    const inheritedRules = rules.filter(r => r.inherited)
+
+    if (directRules.length > 0) {
+      this.renderRuleGroup('Direct rules', directRules)
+    }
+    if (inheritedRules.length > 0) {
+      this.renderRuleGroup('Inherited', inheritedRules)
+    }
+  }
+
+  private renderRuleGroup(title: string, rules: MatchedCSSRule[]): void {
+    const group = document.createElement('div')
+    group.className = 'prop-group'
+
+    const groupTitle = document.createElement('div')
+    groupTitle.className = 'prop-group-title'
+    groupTitle.textContent = title
+    group.appendChild(groupTitle)
+
+    // Sub-group by source file
+    const bySource = new Map<string, MatchedCSSRule[]>()
+    for (const rule of rules) {
+      const list = bySource.get(rule.source) || []
+      list.push(rule)
+      bySource.set(rule.source, list)
+    }
+
+    for (const [source, sourceRules] of bySource) {
+      const sourceLabel = document.createElement('div')
+      sourceLabel.className = 'stylesheet-source-label'
+      sourceLabel.textContent = source
+      group.appendChild(sourceLabel)
+
+      for (const rule of sourceRules) {
+        group.appendChild(this.createRuleBlock(rule))
+      }
+    }
+
+    this.stylesheetSection.appendChild(group)
+  }
+
+  private createRuleBlock(rule: MatchedCSSRule): HTMLElement {
+    const block = document.createElement('div')
+    block.className = 'stylesheet-rule-block'
+
+    const selectorRow = document.createElement('div')
+    selectorRow.className = 'stylesheet-selector'
+    const selectorText = document.createElement('span')
+    selectorText.textContent = rule.selector
+    const specBadge = document.createElement('span')
+    specBadge.className = `stylesheet-spec-badge spec-${rule.specificity}`
+    specBadge.textContent = rule.specificity
+    selectorRow.appendChild(selectorText)
+    selectorRow.appendChild(specBadge)
+    block.appendChild(selectorRow)
+
+    const textarea = document.createElement('textarea')
+    textarea.className = 'stylesheet-rule-editor'
+    textarea.spellcheck = false
+    const formatted = rule.properties
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s)
+      .join(';\n')
+    textarea.value = formatted ? formatted + ';' : ''
+    textarea.rows = Math.max(2, formatted.split('\n').length + 1)
+    textarea.placeholder = 'e.g. color: red;\nfont-size: 16px;'
+
+    const originalRule = { ...rule }
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+    let lastCommittedValue = textarea.value
+    let dirty = false
+
+    const commitChange = (): void => {
+      if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null }
+      if (!dirty || !this.onStylesheetRuleChange) return
+      dirty = false
+      lastCommittedValue = textarea.value
+      const newProps = textarea.value
+        .split('\n')
+        .map(s => s.trim())
+        .filter(s => s)
+        .join(' ')
+      this.onStylesheetRuleChange(originalRule, newProps)
+    }
+
+    this.pendingStylesheetCommits.push(commitChange)
+
+    textarea.addEventListener('input', () => {
+      dirty = textarea.value !== lastCommittedValue
+      if (debounceTimer) clearTimeout(debounceTimer)
+      if (dirty) debounceTimer = setTimeout(commitChange, 600)
+    })
+    textarea.addEventListener('blur', commitChange)
+
+    block.appendChild(textarea)
+    return block
+  }
+
+  private appendRuleBlock(rule: MatchedCSSRule): void {
+    const block = this.createRuleBlock(rule)
+    this.stylesheetSection.appendChild(block)
+    // Focus the textarea so the user can start typing immediately
+    const textarea = block.querySelector('textarea')
+    if (textarea) textarea.focus()
   }
 
   private renderAttributes(tagName: string, attributes: Record<string, string>): void {

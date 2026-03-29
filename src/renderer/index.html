@@ -269,12 +269,19 @@
           <span id="properties-title">Properties</span>
           <button id="properties-close" title="Close" aria-label="Close properties panel">&times;</button>
         </div>
+        <div id="properties-element-info" class="hidden">
+          <span id="element-info-tag"></span>
+          <span id="element-info-id"></span>
+          <span id="element-info-class"></span>
+        </div>
         <div id="properties-tabs" role="tablist" aria-label="Property categories">
-          <button class="prop-tab active" data-tab="css" role="tab" aria-selected="true" aria-controls="css-properties" id="tab-css">CSS</button>
+          <button class="prop-tab active" data-tab="css" role="tab" aria-selected="true" aria-controls="css-properties" id="tab-css">Inline</button>
+          <button class="prop-tab" data-tab="stylesheet" role="tab" aria-selected="false" aria-controls="stylesheet-properties" id="tab-stylesheet">Stylesheet</button>
           <button class="prop-tab" data-tab="attributes" role="tab" aria-selected="false" aria-controls="attr-properties" id="tab-attributes">Attributes</button>
         </div>
         <div id="properties-content">
           <div id="css-properties" class="prop-section active" role="tabpanel" aria-labelledby="tab-css"></div>
+          <div id="stylesheet-properties" class="prop-section" role="tabpanel" aria-labelledby="tab-stylesheet"></div>
           <div id="attr-properties" class="prop-section" role="tabpanel" aria-labelledby="tab-attributes"></div>
         </div>
       </div>

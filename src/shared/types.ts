@@ -64,6 +64,16 @@ export interface EditorTheme {
   name: 'light' | 'dark'
 }
 
+// Matched CSS rule from stylesheets
+export interface MatchedCSSRule {
+  selector: string
+  cssText: string        // full rule text: "selector { ... }"
+  properties: string     // just the declaration block contents
+  source: string         // 'embedded' | filename
+  specificity: 'element' | 'class' | 'id' | 'inline'
+  inherited: boolean     // true if rule matches a parent, not the element itself
+}
+
 // Preview messages sent via postMessage between iframe and parent
 export interface PreviewSelectMessage {
   type: 'element-selected'
@@ -72,6 +82,7 @@ export interface PreviewSelectMessage {
   computedStyles: Record<string, string>
   attributes: Record<string, string>
   rect: { top: number; left: number; width: number; height: number }
+  matchedRules: MatchedCSSRule[]
 }
 
 export interface PreviewDragMessage {
@@ -95,7 +106,18 @@ export interface PreviewLinkEditMessage {
   selectorPath: string | null
 }
 
-export type PreviewMessage = PreviewSelectMessage | PreviewDragMessage | PreviewHoverMessage | PreviewLinkEditMessage
+export interface PreviewTextEditMessage {
+  type: 'text-edited'
+  selectorPath: string
+  newTextContent: string
+}
+
+export interface PreviewDeleteMessage {
+  type: 'element-deleted'
+  selectorPath: string
+}
+
+export type PreviewMessage = PreviewSelectMessage | PreviewDragMessage | PreviewHoverMessage | PreviewLinkEditMessage | PreviewTextEditMessage | PreviewDeleteMessage
 
 // Source mapping
 export interface SourceNode {

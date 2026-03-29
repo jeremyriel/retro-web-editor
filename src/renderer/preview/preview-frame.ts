@@ -67,13 +67,16 @@ export class PreviewFrame {
     this.iframe.srcdoc = doc
   }
 
-  updateCSS(cssContent: string): void {
+  updateCSS(cssContent: string, sourceName?: string): void {
     if (!this.iframe.contentDocument) return
     let styleEl = this.iframe.contentDocument.getElementById('rwe-css-override') as HTMLStyleElement
     if (!styleEl) {
       styleEl = this.iframe.contentDocument.createElement('style')
       styleEl.id = 'rwe-css-override'
       this.iframe.contentDocument.head.appendChild(styleEl)
+    }
+    if (sourceName) {
+      styleEl.setAttribute('data-rwe-source', sourceName)
     }
     styleEl.textContent = cssContent
   }
@@ -160,9 +163,26 @@ export class PreviewFrame {
     return `
     (function() {
       let selectedEl = null;
+      let editingEl = null;
       let dragDropEnabled = false;
       let dragSource = null;
       let dragMarker = null;
+
+      var TEXT_TAGS = {P:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,SPAN:1,A:1,LI:1,TD:1,TH:1,LABEL:1,FIGCAPTION:1,BLOCKQUOTE:1,CAPTION:1,DT:1,DD:1,SUMMARY:1,LEGEND:1,BUTTON:1};
+
+      function exitEditMode() {
+        if (!editingEl) return;
+        var el = editingEl;
+        editingEl = null;
+        el.contentEditable = 'false';
+        el.style.outline = '2px solid #0066cc';
+        // Send text change back to parent
+        window.parent.postMessage({
+          type: 'text-edited',
+          selectorPath: getSelectorPath(el),
+          newTextContent: el.innerHTML
+        }, '*');
+      }
 
       function getSelectorPath(el) {
         if (!el) return '';
@@ -223,9 +243,75 @@ export class PreviewFrame {
         return attrs;
       }
 
+      function getMatchedRules(el) {
+        var rules = [];
+        try {
+          var sheets = document.styleSheets;
+          for (var s = 0; s < sheets.length; s++) {
+            var sheet = sheets[s];
+            var owner = sheet.ownerNode;
+            // Skip injected RWE styles (but NOT rwe-css-override, which holds the user's CSS file)
+            if (owner && owner.id && owner.id.startsWith('rwe-') && owner.id !== 'rwe-css-override') continue;
+            var source;
+            if (owner && owner.id === 'rwe-css-override') {
+              // This is the user's CSS file injected as an override
+              source = owner.getAttribute('data-rwe-source') || 'stylesheet';
+            } else {
+              source = sheet.href ? sheet.href.split('/').pop() : 'embedded';
+            }
+            var cssRules;
+            try { cssRules = sheet.cssRules || sheet.rules; } catch(e) { continue; }
+            for (var r = 0; r < cssRules.length; r++) {
+              var rule = cssRules[r];
+              if (rule.type !== 1) continue; // CSSStyleRule only
+              var sel = rule.selectorText;
+              if (!sel) continue;
+              // Check if element matches directly
+              var direct = false;
+              var inherited = false;
+              try { direct = el.matches(sel); } catch(e) {}
+              // Check if a parent matches (inherited)
+              if (!direct) {
+                var parent = el.parentElement;
+                while (parent && parent !== document.documentElement) {
+                  try { if (parent.matches(sel)) { inherited = true; break; } } catch(e) {}
+                  parent = parent.parentElement;
+                }
+              }
+              if (!direct && !inherited) continue;
+              // Determine specificity bucket
+              var spec = 'element';
+              if (sel.indexOf('#') !== -1) spec = 'id';
+              else if (sel.indexOf('.') !== -1) spec = 'class';
+              // Extract just the properties
+              var props = rule.style.cssText;
+              rules.push({
+                selector: sel,
+                cssText: sel + ' { ' + props + ' }',
+                properties: props,
+                source: source,
+                specificity: spec,
+                inherited: inherited
+              });
+            }
+          }
+        } catch(e) {}
+        return rules;
+      }
+
       document.addEventListener('click', function(e) {
         // Ignore clicks on injected elements
         if (e.target.id && e.target.id.startsWith('rwe-')) return;
+
+        // If clicking inside the element being edited, let the browser handle it (cursor placement)
+        if (editingEl && (e.target === editingEl || editingEl.contains(e.target))) {
+          return;
+        }
+
+        // Exit edit mode if clicking elsewhere
+        if (editingEl) {
+          exitEditMode();
+        }
 
         e.preventDefault();
         e.stopPropagation();
@@ -242,8 +328,36 @@ export class PreviewFrame {
           tagName: el.tagName.toLowerCase(),
           computedStyles: getComputedProps(el),
           attributes: getAttributes(el),
-          rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }
+          rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+          matchedRules: getMatchedRules(el)
         }, '*');
+      }, true);
+
+      // Double-click to enter text editing mode
+      document.addEventListener('dblclick', function(e) {
+        if (e.target.id && e.target.id.startsWith('rwe-')) return;
+        var el = e.target;
+        if (!TEXT_TAGS[el.tagName]) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Exit previous edit if any
+        if (editingEl && editingEl !== el) {
+          exitEditMode();
+        }
+
+        editingEl = el;
+        el.contentEditable = 'true';
+        el.style.outline = '2px solid #00aa44';
+        el.focus();
+      }, true);
+
+      // Commit edits on blur
+      document.addEventListener('focusout', function(e) {
+        if (editingEl && e.target === editingEl) {
+          exitEditMode();
+        }
       }, true);
 
       document.addEventListener('mouseover', function(e) {
@@ -259,8 +373,131 @@ export class PreviewFrame {
         window.parent.postMessage({ type: 'element-hovered', selectorPath: null }, '*');
       });
 
+      // Enter and Tab handling for list items in edit mode
+      document.addEventListener('keydown', function(e) {
+        if (!editingEl) return;
+
+        // Enter in a list item: create a new <li>
+        if (e.key === 'Enter' && !e.shiftKey) {
+          var li = editingEl;
+          if (li.tagName !== 'LI') {
+            // Check if we're inside an LI
+            var p = li;
+            while (p && p.tagName !== 'LI' && p !== document.body) p = p.parentElement;
+            if (p && p.tagName === 'LI') li = p;
+            else return; // Not in a list item, let contentEditable handle it
+          }
+          e.preventDefault();
+          // Commit current edit
+          exitEditMode();
+          // Create new li after current one
+          var newLi = document.createElement('li');
+          newLi.textContent = '\\u00A0'; // non-breaking space as placeholder
+          li.insertAdjacentElement('afterend', newLi);
+          // Enter edit mode on the new li
+          editingEl = newLi;
+          selectedEl = newLi;
+          newLi.contentEditable = 'true';
+          newLi.style.outline = '2px solid #00aa44';
+          newLi.focus();
+          // Select all so the user can just type to replace
+          var range = document.createRange();
+          range.selectNodeContents(newLi);
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          // Notify parent of the full list change
+          var list = li.parentElement;
+          if (list && (list.tagName === 'UL' || list.tagName === 'OL')) {
+            window.parent.postMessage({
+              type: 'text-edited',
+              selectorPath: getSelectorPath(list),
+              newTextContent: list.innerHTML
+            }, '*');
+          }
+          return;
+        }
+
+        // Tab in a list item: indent (wrap in nested list)
+        if (e.key === 'Tab') {
+          var li = editingEl;
+          if (li.tagName !== 'LI') {
+            var p = li;
+            while (p && p.tagName !== 'LI' && p !== document.body) p = p.parentElement;
+            if (p && p.tagName === 'LI') li = p;
+            else return;
+          }
+          e.preventDefault();
+          var list = li.parentElement;
+          if (!list) return;
+          var listTag = list.tagName; // UL or OL
+          var prevLi = li.previousElementSibling;
+
+          if (!e.shiftKey) {
+            // Indent: move li into a nested list inside the previous sibling
+            if (!prevLi || prevLi.tagName !== 'LI') return; // Can't indent first item
+            var nested = prevLi.querySelector(':scope > ' + listTag.toLowerCase());
+            if (!nested) {
+              nested = document.createElement(listTag.toLowerCase());
+              prevLi.appendChild(nested);
+            }
+            nested.appendChild(li);
+          } else {
+            // Shift+Tab: outdent — move li out of nested list
+            var parentList = list.parentElement; // should be an LI
+            if (!parentList || parentList.tagName !== 'LI') return; // Already top level
+            var grandList = parentList.parentElement;
+            if (!grandList) return;
+            // Insert after the parent LI
+            grandList.insertBefore(li, parentList.nextSibling);
+            // If nested list is now empty, remove it
+            if (list.children.length === 0) list.remove();
+          }
+
+          // Keep editing the moved li
+          editingEl = li;
+          li.contentEditable = 'true';
+          li.style.outline = '2px solid #00aa44';
+          li.focus();
+
+          // Notify parent of the full top-level list change
+          var topList = li.parentElement;
+          while (topList && topList.parentElement && (topList.parentElement.tagName === 'LI' || topList.parentElement.tagName === 'UL' || topList.parentElement.tagName === 'OL')) {
+            topList = topList.parentElement;
+          }
+          if (topList && (topList.tagName === 'UL' || topList.tagName === 'OL')) {
+            window.parent.postMessage({
+              type: 'text-edited',
+              selectorPath: getSelectorPath(topList),
+              newTextContent: topList.innerHTML
+            }, '*');
+          }
+          return;
+        }
+      }, true);
+
+      // Delete/Backspace to remove selected element (when not editing text)
+      document.addEventListener('keydown', function(e) {
+        if (editingEl) return; // Let contentEditable handle keys in edit mode
+        if (!selectedEl) return;
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+          e.preventDefault();
+          var path = getSelectorPath(selectedEl);
+          // Don't allow deleting html, head, or body
+          var tag = selectedEl.tagName;
+          if (tag === 'HTML' || tag === 'HEAD' || tag === 'BODY') return;
+          selectedEl.style.outline = '';
+          selectedEl = null;
+          window.parent.postMessage({
+            type: 'element-deleted',
+            selectorPath: path
+          }, '*');
+        }
+      });
+
       // Ctrl+K link editor
       document.addEventListener('keydown', function(e) {
+        if (editingEl) return; // Don't trigger shortcuts while editing text
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
           e.preventDefault();
           var sel = window.getSelection();

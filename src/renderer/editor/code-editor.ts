@@ -1,6 +1,6 @@
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine, ViewPlugin, ViewUpdate } from '@codemirror/view'
-import { EditorState, Extension } from '@codemirror/state'
-import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
+import { EditorState, Extension, Transaction } from '@codemirror/state'
+import { defaultKeymap, history, historyKeymap, indentWithTab, undo as cmUndo, redo as cmRedo } from '@codemirror/commands'
 import { syntaxHighlighting, defaultHighlightStyle, bracketMatching, foldGutter, foldKeymap, indentOnInput } from '@codemirror/language'
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search'
 import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
@@ -110,6 +110,21 @@ export class CodeEditor {
     this.suppressChange = false
   }
 
+  // Replace content without creating an undo history entry (for tab switches)
+  setContentNoHistory(content: string): void {
+    if (!this.view) return
+    this.suppressChange = true
+    this.view.dispatch({
+      changes: {
+        from: 0,
+        to: this.view.state.doc.length,
+        insert: content,
+      },
+      annotations: Transaction.addToHistory.of(false),
+    })
+    this.suppressChange = false
+  }
+
   getContent(): string {
     return this.view?.state.doc.toString() ?? ''
   }
@@ -183,6 +198,14 @@ export class CodeEditor {
 
   getView(): EditorView | null {
     return this.view
+  }
+
+  undo(): void {
+    if (this.view) cmUndo(this.view)
+  }
+
+  redo(): void {
+    if (this.view) cmRedo(this.view)
   }
 
   scrollToOffset(offset: number, endOffset?: number): void {

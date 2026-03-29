@@ -63,6 +63,98 @@ export class SyncEngine {
     this.currentOrigin = null
   }
 
+  // Called when text is edited directly in the preview
+  textEdited(selectorPath: string, newInnerHTML: string): void {
+    this.currentOrigin = 'visual'
+    const node = findNodeBySelector(this.sourceNodes, selectorPath)
+    if (!node || !this.onCodeUpdate) {
+      this.currentOrigin = null
+      return
+    }
+    // Replace the content between the opening tag end and the closing tag start
+    // node.openTagEnd is the position right after ">", node.endOffset includes "</tag>"
+    const tagContent = this.htmlContent.substring(node.startOffset, node.openTagEnd)
+    const tagName = tagContent.match(/^<(\w+)/)?.[1] || ''
+    const closingTag = `</${tagName}>`
+    const closingPos = this.htmlContent.lastIndexOf(closingTag, node.endOffset)
+    if (closingPos < 0) {
+      this.currentOrigin = null
+      return
+    }
+    const newContent = this.htmlContent.substring(0, node.openTagEnd) + newInnerHTML + this.htmlContent.substring(closingPos)
+    this.htmlContent = newContent
+    this.onCodeUpdate(newContent, 'visual')
+    this.rebuildSourceMap()
+    this.currentOrigin = null
+  }
+
+  // Called to insert HTML after a selected element
+  insertAfterElement(selectorPath: string, html: string): void {
+    this.currentOrigin = 'visual'
+    const node = findNodeBySelector(this.sourceNodes, selectorPath)
+    if (!node || !this.onCodeUpdate) {
+      this.currentOrigin = null
+      return
+    }
+    const newContent = this.htmlContent.substring(0, node.endOffset) + '\n' + html + this.htmlContent.substring(node.endOffset)
+    this.htmlContent = newContent
+    this.onCodeUpdate(newContent, 'visual')
+    this.rebuildSourceMap()
+    if (this.onPreviewUpdate) {
+      this.onPreviewUpdate(this.htmlContent, 'visual')
+    }
+    this.currentOrigin = null
+  }
+
+  // Called to wrap selected element's text content with a tag (bold, italic, etc.)
+  wrapElementContent(selectorPath: string, tag: string): void {
+    this.currentOrigin = 'visual'
+    const node = findNodeBySelector(this.sourceNodes, selectorPath)
+    if (!node || !this.onCodeUpdate) {
+      this.currentOrigin = null
+      return
+    }
+    const tagContent = this.htmlContent.substring(node.startOffset, node.openTagEnd)
+    const tagName = tagContent.match(/^<(\w+)/)?.[1] || ''
+    const closingTag = `</${tagName}>`
+    const closingPos = this.htmlContent.lastIndexOf(closingTag, node.endOffset)
+    if (closingPos < 0) {
+      this.currentOrigin = null
+      return
+    }
+    const innerContent = this.htmlContent.substring(node.openTagEnd, closingPos)
+    const wrapped = `<${tag}>${innerContent}</${tag}>`
+    const newContent = this.htmlContent.substring(0, node.openTagEnd) + wrapped + this.htmlContent.substring(closingPos)
+    this.htmlContent = newContent
+    this.onCodeUpdate(newContent, 'visual')
+    this.rebuildSourceMap()
+    if (this.onPreviewUpdate) {
+      this.onPreviewUpdate(this.htmlContent, 'visual')
+    }
+    this.currentOrigin = null
+  }
+
+  // Called when an element is deleted from the preview
+  deleteElement(selectorPath: string): void {
+    this.currentOrigin = 'visual'
+    const node = findNodeBySelector(this.sourceNodes, selectorPath)
+    if (!node || !this.onCodeUpdate) {
+      this.currentOrigin = null
+      return
+    }
+    // Remove the element and any trailing whitespace/newline
+    let end = node.endOffset
+    if (this.htmlContent[end] === '\n') end++
+    const newContent = this.htmlContent.substring(0, node.startOffset) + this.htmlContent.substring(end)
+    this.htmlContent = newContent
+    this.onCodeUpdate(newContent, 'visual')
+    this.rebuildSourceMap()
+    if (this.onPreviewUpdate) {
+      this.onPreviewUpdate(this.htmlContent, 'visual')
+    }
+    this.currentOrigin = null
+  }
+
   // Called when element is moved via drag-and-drop
   moveElement(sourcePath: string, targetPath: string, position: 'before' | 'after' | 'inside'): void {
     this.currentOrigin = 'visual'
@@ -137,6 +229,10 @@ export class SyncEngine {
     this.htmlContent = newContent
     this.onCodeUpdate(newContent, 'property')
     this.rebuildSourceMap()
+    // Also update preview so the change is visually reflected
+    if (this.onPreviewUpdate) {
+      this.onPreviewUpdate(this.htmlContent, 'property')
+    }
     this.currentOrigin = null
   }
 
@@ -171,6 +267,10 @@ export class SyncEngine {
     this.htmlContent = newContent
     this.onCodeUpdate(newContent, 'property')
     this.rebuildSourceMap()
+    // Also update preview so the change is visually reflected
+    if (this.onPreviewUpdate) {
+      this.onPreviewUpdate(this.htmlContent, 'property')
+    }
     this.currentOrigin = null
   }
 

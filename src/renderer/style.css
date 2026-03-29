@@ -408,6 +408,119 @@ html, body {
   color: var(--text-primary);
 }
 
+#properties-element-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--border-color);
+  font-family: monospace;
+  font-size: 0.75rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#properties-element-info.hidden {
+  display: none;
+}
+
+#element-info-tag {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+#element-info-id {
+  color: #c678dd;
+}
+
+#element-info-class {
+  color: var(--text-secondary);
+}
+
+.stylesheet-source-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 6px 0 2px;
+  font-family: monospace;
+  opacity: 0.7;
+}
+
+.stylesheet-rule-block {
+  margin-bottom: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.stylesheet-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: var(--surface-hover);
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.stylesheet-spec-badge {
+  font-size: 0.5625rem;
+  font-weight: 400;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.spec-element { background: #2d4a3e; color: #8cc8a8; }
+.spec-class   { background: #3a3a5c; color: #a8a8d8; }
+.spec-id      { background: #4a2d4a; color: #c89ad8; }
+.spec-inline  { background: #4a3a2d; color: #d8b88a; }
+
+.stylesheet-rule-editor {
+  width: 100%;
+  border: none;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-family: monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  padding: 6px 8px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.stylesheet-rule-editor:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.stylesheet-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.stylesheet-add-btn {
+  padding: 3px 8px;
+  border: 1px dashed var(--border-color);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 0.6875rem;
+  font-family: monospace;
+}
+
+.stylesheet-add-btn:hover {
+  background: var(--surface-hover);
+  border-style: solid;
+}
+
 #properties-tabs {
   display: flex;
   border-bottom: 1px solid var(--border-color);

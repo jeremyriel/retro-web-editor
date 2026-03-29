@@ -52,8 +52,22 @@ export function createMenu(win: BrowserWindow): void {
     {
       label: 'Edit',
       submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
+        {
+          label: 'Undo',
+          accelerator: 'CmdOrCtrl+Z',
+          click: () => win.webContents.send('menu:action', 'undo'),
+        },
+        {
+          label: 'Redo',
+          accelerator: 'CmdOrCtrl+Y',
+          click: () => win.webContents.send('menu:action', 'redo'),
+        },
+        {
+          label: 'Redo',
+          accelerator: 'CmdOrCtrl+R',
+          visible: false,
+          click: () => win.webContents.send('menu:action', 'redo'),
+        },
         { type: 'separator' },
         { role: 'cut' },
         { role: 'copy' },

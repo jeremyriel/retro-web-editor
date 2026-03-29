@@ -981,7 +981,7 @@ async function openFileFromPath(filePath: string): Promise<void> {
     const tab = tabs.addTab(result.filePath, fileName, result.fileType, content)
     if (wasRecovered) tabs.markDirty(tab.id)
     codeEditor.setLanguage(result.fileType)
-    codeEditor.setContent(content)
+    codeEditor.setContentNoHistory(content)
 
     if (result.fileType === 'html') {
       previewFrame.setBaseDir(result.filePath)
@@ -1168,7 +1168,7 @@ async function init(): Promise<void> {
       if (tab.fileType === 'html') {
         syncEngine.codeChanged(content)
       } else if (tab.fileType === 'css') {
-        previewFrame.updateCSS(content)
+        previewFrame.updateCSS(content, tab.fileName)
       }
     }
   })
@@ -1183,6 +1183,12 @@ async function init(): Promise<void> {
       }
     } else if (msg.type === 'element-dragged') {
       syncEngine.moveElement(msg.sourcePath, msg.targetPath, msg.position)
+    } else if (msg.type === 'text-edited') {
+      syncEngine.textEdited(msg.selectorPath, msg.newTextContent)
+    } else if (msg.type === 'element-deleted') {
+      syncEngine.deleteElement(msg.selectorPath)
+      selectedSelectorPath = null
+      propertyPanel.clearSelection()
     } else if (msg.type === 'link-edit-request') {
       openLinkEditor(msg.selectedText, msg.existingHref, msg.existingTarget, msg.existingTitle, msg.selectorPath)
     }
@@ -1200,13 +1206,153 @@ async function init(): Promise<void> {
     }
   })
 
+  propertyPanel.onStylesheetRuleChanged((rule, newProperties) => {
+    const newRuleText = `${rule.selector} {\n  ${newProperties.split(';').map(s => s.trim()).filter(s => s).join(';\n  ')};\n}`
+
+    const findAndReplaceRule = (content: string): string | null => {
+      // Browser normalizes selectors, so we can't do an exact string match.
+      // Strategy: find all rule blocks in the source, normalize their selectors,
+      // and compare against the browser's normalized selector.
+      const normalizeSelector = (s: string): string => {
+        return s
+          .split(',')
+          .map(part => part
+            .replace(/\s+/g, ' ')
+            .trim()
+            // Browser drops implicit universal selector: *::before → ::before
+            .replace(/^\*::/, '::')
+          )
+          .sort()
+          .join(', ')
+      }
+
+      const browserNorm = normalizeSelector(rule.selector)
+
+      // Scan for rule blocks: find each '{' that's not inside a string/comment,
+      // extract the selector before it, normalize, and compare
+      let searchFrom = 0
+      while (searchFrom < content.length) {
+        const braceIdx = content.indexOf('{', searchFrom)
+        if (braceIdx < 0) break
+
+        // Walk backwards from '{' to find start of selector
+        // (skip whitespace, then go back to previous '}' or start or ';' for @rules)
+        let selStart = braceIdx - 1
+        while (selStart > 0 && content[selStart] !== '}' && content[selStart] !== ';' && content[selStart] !== '{') {
+          selStart--
+        }
+        if (selStart > 0) selStart++ // skip the delimiter char
+        const rawSelector = content.substring(selStart, braceIdx).trim()
+        const sourceNorm = normalizeSelector(rawSelector)
+
+        if (sourceNorm === browserNorm) {
+          // Found the match — find closing brace
+          let depth = 1
+          let i = braceIdx + 1
+          while (i < content.length && depth > 0) {
+            if (content[i] === '{') depth++
+            else if (content[i] === '}') depth--
+            i++
+          }
+          if (depth !== 0) break
+          // Replace from selector start to closing brace
+          return content.substring(0, selStart) + newRuleText + content.substring(i)
+        }
+
+        // Move past this block
+        let depth = 1
+        let i = braceIdx + 1
+        while (i < content.length && depth > 0) {
+          if (content[i] === '{') depth++
+          else if (content[i] === '}') depth--
+          i++
+        }
+        searchFrom = i
+      }
+
+      console.warn('[RWE] Stylesheet rule not found in source.', {
+        browserSelector: browserNorm,
+        source: rule.source,
+      })
+      return null
+    }
+
+    const applyToTab = (tab: { id: string; content: string; fileType: string; fileName?: string }, isCSS: boolean): void => {
+      const updated = findAndReplaceRule(tab.content)
+      if (!updated) return
+      tabs.updateContent(tab.id, updated)
+      // Always route through CodeMirror for undo support
+      if (tabs.getActiveTab()?.id === tab.id) {
+        codeEditor.setContent(updated)
+      }
+      if (isCSS) {
+        previewFrame.updateCSS(updated, tab.fileName)
+      } else {
+        syncEngine.setContent(updated)
+        previewFrame.updateContent(updated)
+      }
+    }
+
+    if (rule.source === 'embedded') {
+      const htmlTab = tabs.getAllTabs().find(t => t.fileType === 'html')
+      if (htmlTab) applyToTab(htmlTab, false)
+    } else {
+      const cssTab = tabs.getAllTabs().find(t => t.fileType === 'css' && t.fileName === rule.source)
+      if (cssTab) applyToTab(cssTab, true)
+    }
+  })
+
+  propertyPanel.setPreferredCSSSource(() => {
+    const cssTab = tabs.getAllTabs().find(t => t.fileType === 'css')
+    return cssTab ? cssTab.fileName : 'embedded'
+  })
+
+  propertyPanel.onAddRule((selector) => {
+    const newRule = `\n\n${selector} {\n  \n}\n`
+    // Prefer appending to the first open CSS file, else to embedded <style>
+    const cssTab = tabs.getAllTabs().find(t => t.fileType === 'css')
+    if (cssTab) {
+      const updated = cssTab.content + newRule
+      tabs.updateContent(cssTab.id, updated)
+      if (tabs.getActiveTab()?.id === cssTab.id) {
+        codeEditor.setContent(updated)
+      }
+      previewFrame.updateCSS(updated, cssTab.fileName)
+    } else {
+      // Add to embedded <style> in the HTML
+      const htmlTab = tabs.getAllTabs().find(t => t.fileType === 'html')
+      if (htmlTab) {
+        let updated: string
+        const styleClose = htmlTab.content.lastIndexOf('</style>')
+        if (styleClose >= 0) {
+          updated = htmlTab.content.substring(0, styleClose) + newRule + htmlTab.content.substring(styleClose)
+        } else {
+          // No <style> block — add one before </head> or at end
+          const headClose = htmlTab.content.indexOf('</head>')
+          const styleBlock = `\n<style>${newRule}</style>\n`
+          if (headClose >= 0) {
+            updated = htmlTab.content.substring(0, headClose) + styleBlock + htmlTab.content.substring(headClose)
+          } else {
+            updated = htmlTab.content + styleBlock
+          }
+        }
+        tabs.updateContent(htmlTab.id, updated)
+        if (tabs.getActiveTab()?.id === htmlTab.id) {
+          codeEditor.setContent(updated)
+        }
+        syncEngine.setContent(updated)
+        previewFrame.updateContent(updated)
+      }
+    }
+  })
+
   propertyPanel.onGoogleFontsOpen(() => {
     openGoogleFontsModal()
   })
 
   tabs.onSwitch((tab) => {
     codeEditor.setLanguage(tab.fileType)
-    codeEditor.setContent(tab.content)
+    codeEditor.setContentNoHistory(tab.content)
     updateWindowTitle()
     if (tab.fileType === 'html') {
       previewFrame.setBaseDir(tab.filePath)
@@ -1226,7 +1372,7 @@ async function init(): Promise<void> {
     }
     tabs.closeTab(tab.id)
     if (!tabs.getActiveTab()) {
-      codeEditor.setContent('')
+      codeEditor.setContentNoHistory('')
       previewFrame.updateContent('')
       propertyPanel.clearSelection()
     }
@@ -1259,7 +1405,7 @@ async function openFile(): Promise<void> {
     const tab = tabs.addTab(result.filePath, fileName, result.fileType, content)
     if (wasRecovered) tabs.markDirty(tab.id)
     codeEditor.setLanguage(result.fileType)
-    codeEditor.setContent(content)
+    codeEditor.setContentNoHistory(content)
 
     if (result.fileType === 'html') {
       previewFrame.setBaseDir(result.filePath)
@@ -1357,8 +1503,8 @@ function handleToolbarAction(action: string, value?: string): void {
     'image': '<img src="" alt="description">',
     'table': '<table>\n  <tr>\n    <th>Header</th>\n    <th>Header</th>\n  </tr>\n  <tr>\n    <td>Cell</td>\n    <td>Cell</td>\n  </tr>\n</table>',
     'div': '<div>\n  \n</div>',
-    'ul': '<ul>\n  <li>Item</li>\n  <li>Item</li>\n</ul>',
-    'ol': '<ol>\n  <li>Item</li>\n  <li>Item</li>\n</ol>',
+    'ul': '<ul>\n  <li>Item</li>\n</ul>',
+    'ol': '<ol>\n  <li>Item</li>\n</ol>',
     'heading': (v?: string) => {
       if (!v || v === 'paragraph') return '<p>text</p>'
       return `<${v}>text</${v}>`
@@ -1377,10 +1523,22 @@ function handleToolbarAction(action: string, value?: string): void {
   if (!snippet) return
 
   const text = typeof snippet === 'function' ? snippet(value) : snippet
+
+  // If an element is selected in the preview, apply the action visually
+  if (selectedSelectorPath) {
+    if (['bold', 'italic', 'underline', 'strikethrough'].includes(action)) {
+      const tag = text.match(/<(\w+)>/)?.[1] || 'span'
+      syncEngine.wrapElementContent(selectedSelectorPath, tag)
+    } else {
+      syncEngine.insertAfterElement(selectedSelectorPath, text)
+    }
+    return
+  }
+
+  // Otherwise insert at code editor cursor
   const view = codeEditor.getView()
   if (!view) return
 
-  const cursor = view.state.selection.main.head
   const selection = view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)
 
   let insertText = text
@@ -1403,6 +1561,8 @@ function handleToolbarAction(action: string, value?: string): void {
 // ---- Menu Actions ----
 function handleMenuAction(action: string): void {
   switch (action) {
+    case 'undo': codeEditor.undo(); break
+    case 'redo': codeEditor.redo(); break
     case 'open': openFile(); break
     case 'open-recent': showRecentFiles(); break
     case 'save': saveCurrentTab(); break
