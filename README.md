@@ -143,7 +143,20 @@ Download the latest version for your platform from the [Releases page](https://g
 1. Download the `.dmg` file from the link above
 2. Open the DMG file
 3. Drag the Retro Web Editor icon into your Applications folder
-4. Launch from Applications (you may need to right-click > Open the first time, since the app is not signed with an Apple Developer certificate)
+4. Launch from Applications
+
+> [!WARNING]
+> **"Retro Web Editor is damaged and can't be opened"**
+>
+> This is a hobby project without a paid Apple Developer account, so release builds are **not notarized** by Apple (they're only ad-hoc signed). macOS Gatekeeper blocks unnotarized apps downloaded from a browser with a "damaged" error — the app isn't actually corrupted, and the usual right-click > Open trick won't fix this particular error since that only works around the milder "unidentified developer" prompt.
+>
+> To run it anyway, open Terminal and remove the quarantine flag Gatekeeper added on download:
+>
+> ```bash
+> xattr -cr "/Applications/Retro Web Editor.app"
+> ```
+>
+> Only do this for builds you trust the source of. If you'd rather avoid the workaround entirely, see the "Build from Source" section below to build the app yourself.
 
 ### Linux Installation
 
